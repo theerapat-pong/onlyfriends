@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.text-rainbow-animated {
+  /* A more detailed and smoother gradient that loops perfectly */
+  background-image: linear-gradient(
+    to right,
+    #fecaca, /* pastel red */
+    #fed7aa, /* pastel orange */
+    #fef08a, /* pastel yellow */
+    #d9f99d, /* pastel lime */
+    #a5f3fc, /* pastel cyan */
+    #bfdbfe, /* pastel blue */
+    #ddd6fe, /* pastel violet */
+    #fecaca  /* pastel red again for a seamless loop */
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* A wider gradient and slower animation create a smoother effect */
+  background-size: 400% auto;
+  animation: rainbow-flow 10s linear infinite;
+}
+
+@keyframes rainbow-flow {
+  from {
+    background-position: 0% center;
+  }
+  to {
+    /* Move the background by its full width to complete a cycle */
+    background-position: -400% center;
+  }
+}
+
+.bg-rainbow-animated {
+  background-image: linear-gradient(
+    to right,
+    #ff2d2d, #ff9e2c, #ffdb2c, #3cff3c, #2cceff, #2c5fff, #d12cff, #ff2d2d
+  );
+  background-size: 200% auto;
+  animation: rainbow-flow 4s linear infinite;
+}
+
+.bg-rainbow-light {
+  background-image: linear-gradient(
+    to right,
+    #fecaca, /* pastel red */
+    #fed7aa, /* pastel orange */
+    #fef08a, /* pastel yellow */
+    #d9f99d, /* pastel lime */
+    #a5f3fc, /* pastel cyan */
+    #bfdbfe, /* pastel blue */
+    #ddd6fe /* pastel violet */
+  );
+}
+
+.text-shadow-strong {
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes fade-in-down {
+  from {
+      opacity: 0;
+      transform: translateY(-20px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+.animate-fade-in-down {
+    animation: fade-in-down 0.5s ease-out forwards;
+}
+
+@keyframes welcome-toast-animation {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+.animate-welcome-toast {
+  animation: welcome-toast-animation 5s ease-in-out forwards;
+}
+
+/* VIP1 Welcome Animation - Magical Welcome */
+@keyframes vip1-entry-animation {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.8) rotate(-5deg);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(0) scale(1.05) rotate(2deg);
+  }
+  30% {
+    transform: scale(1) rotate(0deg);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+}
+
+.animate-vip1-welcome {
+  animation: vip1-entry-animation 5s ease-out forwards;
+}
+
+/* VIP2 Welcome Animation - Comet Welcome */
+@keyframes vip2-entry-animation {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(10px) scale(1.1); /* Bounce effect */
+  }
+  25% {
+    transform: translateY(0) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.7);
+  }
+}
+
+.animate-vip2-welcome {
+  animation: vip2-entry-animation 5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+}
+
+@keyframes slide-in-out-top {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10%, 90% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+.animate-slide-in-out-top {
+  animation: slide-in-out-top 5s ease-in-out forwards;
+}
+
+/* Enhanced VIP1 (Pink) Rank Style - Magical Aurora */
+.text-rank-vip1 {
+  background-image: linear-gradient(
+    -45deg,
+    #ff79c6, /* Bright Pink */
+    #f55de0, /* Hotter Pink */
+    #bd93f9, /* Light Purple */
+    #ff79c6  /* Bright Pink for loop */
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 400% 400%;
+  animation: pink-magic-flow 8s ease-in-out infinite;
+  text-shadow: 0 0 5px rgba(255, 121, 198, 0.4), 0 0 10px rgba(189, 147, 249, 0.3);
+}
+
+@keyframes pink-magic-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Enhanced VIP2 (Orange) Rank Style - Flowing Fire */
+.text-rank-vip2 {
+  background-image: linear-gradient(
+    to right,
+    #ffb86c, /* Bright Orange */
+    #f1fa8c, /* Bright Yellow */
+    #ff5555, /* Light Red */
+    #ffb86c  /* Bright Orange for loop */
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 300% auto;
+  animation: orange-fire-flow 7s linear infinite;
+  text-shadow: 0 0 8px rgba(255, 184, 108, 0.3);
+}
+
+@keyframes orange-fire-flow {
+  from {
+    background-position: 0% center;
+  }
+  to {
+    background-position: -300% center;
+  }
+}
+
+/* Glowing border for Owner badge */
+@keyframes pulse-yellow-border {
+  0%, 100% {
+    border-color: rgba(250, 204, 21, 0.7); /* gold-400 with opacity */
+    box-shadow: 0 0 3px rgba(250, 204, 21, 0.4);
+  }
+  50% {
+    border-color: rgba(252, 211, 77, 1); /* gold-300 */
+    box-shadow: 0 0 8px rgba(250, 204, 21, 0.7);
+  }
+}
