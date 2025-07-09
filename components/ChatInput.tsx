@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { User } from '../types';
-import { PaperPlaneIcon } from './Icons'; // สมมติว่ามี Icon component
+import { SendIcon } from './Icons'; // แก้ไข: เปลี่ยนจาก PaperPlaneIcon เป็น SendIcon
 
 interface ChatInputProps {
   currentUser: User; // รับข้อมูลผู้ใช้ที่ล็อกอินอยู่
@@ -51,7 +51,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ currentUser }) => {
           className="p-3 bg-indigo-600 rounded-full text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500 disabled:bg-indigo-900 disabled:cursor-not-allowed"
           disabled={message.trim() === ''}
         >
-          <PaperPlaneIcon className="w-5 h-5" />
+          {/* แก้ไข: เปลี่ยนจาก PaperPlaneIcon เป็น SendIcon */}
+          <SendIcon className="w-5 h-5" />
         </button>
       </form>
     </div>
