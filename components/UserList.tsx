@@ -1,20 +1,24 @@
 import React from 'react';
 import { User } from '../types';
-import { BotIcon, CrownIcon, ShieldCheckIcon } from './Icons';
+import { BotIcon, HomeIcon } from './Icons';
 import LevelBadge from './LevelBadge';
+import GangBadge from './GangBadge';
 
 interface UserListProps {
   users: User[];
   currentUser: User;
   onViewProfile: (user: User) => void;
   onUserContextMenu: (event: React.MouseEvent, user: User) => void;
+  isAuthorized: boolean;
 }
 
-const UserListItem = ({ user, currentUser, onViewProfile, onUserContextMenu }: { user: User; currentUser: User; onViewProfile: (user: User) => void; onUserContextMenu: (event: React.MouseEvent, user: User) => void; }) => {
+const UserListItem = ({ user, currentUser, onViewProfile, onUserContextMenu, isAuthorized }: { user: User; currentUser: User; onViewProfile: (user: User) => void; onUserContextMenu: (event: React.MouseEvent, user: User) => void; isAuthorized: boolean; }) => {
   
   const handleContextMenu = (event: React.MouseEvent) => {
-    // Only the owner can open the context menu, and not on themselves or bots.
-    if (currentUser.isOwner && !user.isOwner && user.name !== 'Gemini Bot') {
+    const isModerator = currentUser.isOwner || currentUser.color === 'text-rank-admin';
+
+    // A moderator can open context menu on other users, but not on themselves, bots, or other owners.
+    if (isModerator && user.id !== currentUser.id && user.name !== 'Gemini Bot' && !user.isOwner) {
       event.preventDefault();
       onUserContextMenu(event, user);
     }
@@ -39,12 +43,10 @@ const UserListItem = ({ user, currentUser, onViewProfile, onUserContextMenu }: {
         </div>
         <div className="flex-1 flex items-center min-w-0">
           {user.isOwner && (
-            <CrownIcon className="w-4 h-4 mr-1.5 text-yellow-400 flex-shrink-0" aria-label="Room Owner" />
-          )}
-          {user.color === 'text-rank-admin' && !user.isOwner && (
-            <ShieldCheckIcon className="w-4 h-4 mr-1.5 text-rank-admin flex-shrink-0" aria-label="Room Admin" />
+            <HomeIcon className="w-4 h-4 mr-1.5 flex-shrink-0" aria-label="Room Owner" />
           )}
           <span className={`font-semibold text-sm truncate ${user.color}`}>{user.name}</span>
+          <GangBadge rankColor={user.color} isAuthorized={isAuthorized} />
           <LevelBadge level={user.level} />
         </div>
       </button>
@@ -52,7 +54,7 @@ const UserListItem = ({ user, currentUser, onViewProfile, onUserContextMenu }: {
   );
 };
 
-const UserList = ({ users, currentUser, onViewProfile, onUserContextMenu }: UserListProps) => {
+const UserList = ({ users, currentUser, onViewProfile, onUserContextMenu, isAuthorized }: UserListProps) => {
   const bots = users.filter(u => u.name === 'Gemini Bot');
   const regularUsers = users.filter(u => u.name !== 'Gemini Bot');
   
@@ -62,7 +64,7 @@ const UserList = ({ users, currentUser, onViewProfile, onUserContextMenu }: User
         <h2 className="text-xs font-bold uppercase text-camfrog-text-muted px-2 mb-2">{`ผู้ใช้งาน — ${regularUsers.length}`}</h2>
         <ul className="space-y-1">
             {regularUsers.map(user => (
-                <UserListItem key={user.id} user={user} currentUser={currentUser} onViewProfile={onViewProfile} onUserContextMenu={onUserContextMenu} />
+                <UserListItem key={user.id} user={user} currentUser={currentUser} onViewProfile={onViewProfile} onUserContextMenu={onUserContextMenu} isAuthorized={isAuthorized} />
             ))}
         </ul>
 
@@ -71,7 +73,7 @@ const UserList = ({ users, currentUser, onViewProfile, onUserContextMenu }: User
             <h2 className="text-xs font-bold uppercase text-camfrog-text-muted px-2 mb-2">{`บอท — ${bots.length}`}</h2>
             <ul className="space-y-1">
                 {bots.map(bot => (
-                    <UserListItem key={bot.id} user={bot} currentUser={currentUser} onViewProfile={onViewProfile} onUserContextMenu={onUserContextMenu} />
+                    <UserListItem key={bot.id} user={bot} currentUser={currentUser} onViewProfile={onViewProfile} onUserContextMenu={onUserContextMenu} isAuthorized={isAuthorized} />
                 ))}
             </ul>
           </div>

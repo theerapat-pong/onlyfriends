@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Message } from '../types';
-import { BotIcon, CrownIcon, ShieldCheckIcon } from './Icons';
+import { BotIcon, HomeIcon } from './Icons';
 import LevelBadge from './LevelBadge';
+import GangBadge from './GangBadge';
 
 interface ChatPanelProps {
   messages: Message[];
@@ -35,15 +36,18 @@ const MessageItem = ({ message }: { message: Message }) => {
       <div>
         <div className="flex items-center">
           {message.isAuthorOwner && (
-            <CrownIcon className="w-4 h-4 mr-1.5 text-yellow-400 flex-shrink-0" aria-label="Room Owner" />
-          )}
-          {!message.isAuthorOwner && message.authorColor === 'text-rank-admin' && (
-             <ShieldCheckIcon className="w-4 h-4 mr-1.5 text-rank-admin flex-shrink-0" aria-label="Room Admin" />
+            <HomeIcon className="w-4 h-4 mr-1.5 flex-shrink-0" aria-label="Room Owner" />
           )}
           <p className={`font-bold ${message.authorColor || 'text-camfrog-accent'}`}>{message.author}</p>
+          <GangBadge rankColor={message.authorColor} isAuthorized={message.showVipBadge} />
           <LevelBadge level={message.authorLevel} />
         </div>
-        <p className="text-camfrog-text break-words whitespace-pre-wrap">{message.text}</p>
+        <p
+          className="text-camfrog-text break-words whitespace-pre-wrap"
+          style={message.styles}
+        >
+          {message.text}
+        </p>
       </div>
     </div>
   );

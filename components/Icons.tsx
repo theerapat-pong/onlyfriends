@@ -18,9 +18,18 @@ export const UserGroupIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-export const CrownIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
-    <path d="M20.12,4.46,14.5,9.08l-2.5-4.16L9.5,9.08,3.88,4.46A1,1,0,0,0,2.5,5.85l3.29,6.58-3.07,5.11A1,1,0,0,0,3.6,19H20.4a1,1,0,0,0,.88-1.46l-3.07-5.11,3.29-6.58A1,1,0,0,0,20.12,4.46Z" />
+export const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+    {/* Body: A rectangle positioned directly underneath the roof. */}
+    <path
+        d="M4 11 V 22 H 20 V 11 H 4 Z"
+        fill="#c084fc"
+    />
+    {/* Roof: A solid, thick triangle that overhangs the body. */}
+    <path
+        d="M12 2 L 1 11 L 23 11 Z"
+        fill="#581c87"
+    />
   </svg>
 );
 
@@ -53,4 +62,58 @@ export const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
   </svg>
+);
+
+export const BoldIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M15.15,15.65H11.3V18H8.8V15.65H7.5V13.3h1.3V9.85H7.5V7.5h3.65c2.4,0,3.9,1.1,3.9,3.15,0,1.35-.95,2.3-2.3,2.65Zm-3.85-2.3v-3.5h1.6c.95,0,1.5.5,1.5,1.75s-.55,1.75-1.5,1.75Z" />
+  </svg>
+);
+
+export const ItalicIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M15.25,18H12.75l-4-12H11.25l4,12Z" />
+  </svg>
+);
+
+export const TextColorIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M13.2,16.8,11,12.3,8.8,16.8ZM10.5,6h3L18,18H15.6l-.9-2.2H9.3L8.4,18H6Z" />
+  </svg>
+);
+
+export const InformationCircleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+    </svg>
+);
+
+export const ChatBubbleLeftRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-3.722.267c-.559.04-.99.467-.99.998v3.033a1.5 1.5 0 0 1-2.43 1.054l-5.234-3.736a1.5 1.5 0 0 0-.917 0l-5.234 3.736a1.5 1.5 0 0 1-2.43-1.054V12.6c0-1.136.847-2.1 1.98-2.193l3.722-.267c.559-.04.99-.467.99-.998V6.033a1.5 1.5 0 0 1 2.43-1.054l5.234 3.736a1.5 1.5 0 0 0 .917 0l5.234-3.736a1.5 1.5 0 0 1 2.43 1.054v1.286c0 .97-.616 1.813-1.5 2.097Z" />
+    </svg>
+);
+
+export const ShieldExclamationIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+    </svg>
+);
+
+export const CogIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12a7.5 7.5 0 0 1 15 0m-15 0a7.5 7.5 0 0 0 15 0m-15 0H3m18 0h-1.5m-15 0H3m18 0h-1.5m-15 0H3m18 0h-1.5m-15 0H3m18 0h-1.5m-15 0H3m18 0h-1.5m-15 0H3m18 0h-1.5" />
+    </svg>
+);
+
+export const ExclamationTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+    </svg>
+);
+
+export const ListBulletIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+    </svg>
 );

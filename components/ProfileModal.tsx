@@ -1,21 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
-import { CrownIcon, XMarkIcon, BotIcon, CameraIcon, ShieldCheckIcon } from './Icons';
+import { HomeIcon, XMarkIcon, BotIcon, CameraIcon } from './Icons';
 import LevelBadge from './LevelBadge';
+import GangBadge from './GangBadge';
 
 interface ProfileModalProps {
   user: User;
   currentUser: User;
   onClose: () => void;
   onSave: (user: User) => void;
+  isAuthorized: boolean;
 }
 
-const ProfileModal = ({ user, currentUser, onClose, onSave }: ProfileModalProps) => {
+const ProfileModal = ({ user, currentUser, onClose, onSave, isAuthorized }: ProfileModalProps) => {
   const isCurrentUser = user.id === currentUser.id;
 
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio || '');
   const [avatar, setAvatar] = useState(user.avatar);
+  const [level, setLevel] = useState(user.level);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,11 +27,12 @@ const ProfileModal = ({ user, currentUser, onClose, onSave }: ProfileModalProps)
     setName(user.name);
     setBio(user.bio || '');
     setAvatar(user.avatar);
+    setLevel(user.level);
   }, [user]);
 
   const handleSave = () => {
     if (name.trim()) {
-      onSave({ ...user, name: name.trim(), bio: bio.trim(), avatar });
+      onSave({ ...user, name: name.trim(), bio: bio.trim(), avatar, level });
     }
   };
   
@@ -49,7 +53,7 @@ const ProfileModal = ({ user, currentUser, onClose, onSave }: ProfileModalProps)
     }
   };
   
-  const isSaveDisabled = !name.trim() || (name.trim() === user.name && bio.trim() === (user.bio || '') && avatar === user.avatar);
+  const isSaveDisabled = !name.trim() || (name.trim() === user.name && bio.trim() === (user.bio || '') && avatar === user.avatar && level === user.level);
 
   return (
     <div
@@ -100,12 +104,10 @@ const ProfileModal = ({ user, currentUser, onClose, onSave }: ProfileModalProps)
 
              <div className="mt-4 text-center">
                 <div className="flex items-center justify-center">
-                    {user.isOwner && <CrownIcon className="w-6 h-6 mr-2 text-yellow-400" />}
-                    {user.color === 'text-rank-admin' && !user.isOwner && (
-                       <ShieldCheckIcon className="w-6 h-6 mr-2 text-rank-admin" />
-                    )}
+                    {user.isOwner && <HomeIcon className="w-6 h-6 mr-2" />}
                     <p className={`text-2xl font-bold ${user.color}`}>{isCurrentUser ? name : user.name}</p>
-                    <LevelBadge level={user.level} />
+                    <GangBadge rankColor={user.color} isAuthorized={isAuthorized} />
+                    <LevelBadge level={isCurrentUser ? level : user.level} />
                 </div>
                 <div className="mt-2 text-sm font-mono bg-camfrog-panel-light px-3 py-1 rounded-full text-camfrog-text-muted">
                   {user.uid}
@@ -143,6 +145,22 @@ const ProfileModal = ({ user, currentUser, onClose, onSave }: ProfileModalProps)
                       maxLength={150}
                     />
                   </div>
+                  {user.isOwner && (
+                    <div>
+                        <label htmlFor="level" className="block text-sm font-bold text-camfrog-text-muted mb-1">
+                          แก้ไขเลเวล (สำหรับทดสอบ)
+                        </label>
+                        <input
+                            id="level"
+                            type="number"
+                            value={level}
+                            onChange={(e) => setLevel(parseInt(e.target.value, 10) || 0)}
+                            className="w-full bg-camfrog-bg border border-camfrog-panel-light rounded-md py-2 px-3 text-camfrog-text focus:outline-none focus:ring-2 focus:ring-camfrog-accent"
+                            min="0"
+                            max="100"
+                        />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center px-4 py-6 bg-camfrog-bg rounded-lg min-h-[100px] flex items-center justify-center">

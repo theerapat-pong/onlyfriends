@@ -102,7 +102,7 @@
       @keyframes welcome-toast-animation {
         0% {
           opacity: 0;
-          transform: translateY(20px);
+          transform: translateY(-20px);
         }
         10% {
           opacity: 1;
@@ -114,12 +114,66 @@
         }
         100% {
           opacity: 0;
-          transform: translateY(20px);
+          transform: translateY(-20px);
         }
       }
 
       .animate-welcome-toast {
         animation: welcome-toast-animation 5s ease-in-out forwards;
+      }
+
+      /* VIP1 Welcome Animation - Magical Welcome */
+      @keyframes vip1-entry-animation {
+        0% {
+          opacity: 0;
+          transform: translateX(-30px) scale(0.8) rotate(-5deg);
+        }
+        20% {
+          opacity: 1;
+          transform: translateX(0) scale(1.05) rotate(2deg);
+        }
+        30% {
+          transform: scale(1) rotate(0deg);
+        }
+        80% {
+          opacity: 1;
+          transform: scale(1) rotate(0deg);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(0.8) translateY(-20px);
+        }
+      }
+
+      .animate-vip1-welcome {
+        animation: vip1-entry-animation 5s ease-out forwards;
+      }
+      
+      /* VIP2 Welcome Animation - Comet Welcome */
+      @keyframes vip2-entry-animation {
+        0% {
+          opacity: 0;
+          transform: translateY(-50px) scale(0.7);
+        }
+        15% {
+          opacity: 1;
+          transform: translateY(10px) scale(1.1); /* Bounce effect */
+        }
+        25% {
+          transform: translateY(0) scale(1);
+        }
+        80% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(-50px) scale(0.7);
+        }
+      }
+
+      .animate-vip2-welcome {
+        animation: vip2-entry-animation 5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
       }
 
       @keyframes slide-in-out-top {
@@ -192,6 +246,18 @@
         }
         to {
           background-position: -300% center;
+        }
+      }
+      
+      /* Glowing border for Owner badge */
+      @keyframes pulse-yellow-border {
+        0%, 100% {
+          border-color: rgba(250, 204, 21, 0.7); /* gold-400 with opacity */
+          box-shadow: 0 0 3px rgba(250, 204, 21, 0.4);
+        }
+        50% {
+          border-color: rgba(252, 211, 77, 1); /* gold-300 */
+          box-shadow: 0 0 8px rgba(250, 204, 21, 0.7);
         }
       }
     </style>

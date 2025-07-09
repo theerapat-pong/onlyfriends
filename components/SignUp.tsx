@@ -22,7 +22,7 @@ const SignUp = ({ onSignUp, onSwitchToLogin, error }: SignUpProps) => {
   const isFormValid = username.trim().length >= 3 && email.trim() && password.trim().length >= 6;
 
   return (
-    <div className="flex items-center justify-center h-screen bg-camfrog-bg relative">
+    <div className="flex items-center justify-center h-screen bg-camfrog-bg relative p-4">
       <div className="w-full max-w-sm p-8 space-y-6 bg-camfrog-panel rounded-lg shadow-2xl">
         <div className="flex flex-col items-center">
           <UserGroupIcon className="w-16 h-16 text-camfrog-accent mb-4" />
