@@ -1,90 +1,91 @@
-import React, { useState } from 'react';
-import { User } from './types';
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './services/firebase'; // Import auth และ db จากไฟล์ที่เราสร้าง
+import { User } from './types'; // Import User type ของเรา
+
+// Import components ต่างๆ ที่มีอยู่แล้ว
+import ChatPanel from './components/ChatPanel';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
-import ChatRoom from './components/ChatRoom';
-
-// Initial state for a new room: contains only the owner and the bot.
-const MOCK_USERS_INITIAL: User[] = [
-  { id: 1, uid: 'OWNER', name: 'RAIN', email: 'theerapat.info@gmail.com', password: 'Trppt200442', avatar: 'https://i.pravatar.cc/150?u=1', color: 'text-rainbow-animated', isOwner: true, bio: 'Room owner. Loves coding and music.', level: 99 },
-  { id: 2, uid: 'GMNB0T', name: 'Gemini Bot', email: 'bot@example.com', avatar: 'bot', color: 'text-rank-user', bio: 'I am a helpful assistant bot.', level: 0 },
-];
+import Header from './components/Header';
+import LogPanel from './components/LogPanel';
+import UserList from './components/UserList';
+import WelcomeNotification from './components/WelcomeNotification';
+import WelcomeTestPanel from './components/WelcomeTestPanel';
 
 
-const App = () => {
-  const [users, setUsers] = useState<User[]>(MOCK_USERS_INITIAL);
+function App() {
+  // State สำหรับเก็บข้อมูลผู้ใช้ที่ล็อกอินอยู่
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [view, setView] = useState<'login' | 'signup'>('login');
-  const [error, setError] = useState<string | null>(null);
+  // State สำหรับจัดการหน้า loading ขณะตรวจสอบสถานะล็อกอิน
+  const [loading, setLoading] = useState(true);
+  // State สำหรับสลับระหว่างหน้า Login และ SignUp
+  const [isLoginView, setIsLoginView] = useState(true);
 
-  const handleLogin = (email: string, password: string) => {
-    setError(null);
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    if (user) {
-      if (user.isBanned) {
-        setError('บัญชีของคุณถูกระงับการใช้งาน');
+  useEffect(() => {
+    // onAuthStateChanged เป็น listener จาก Firebase ที่จะทำงานทุกครั้ง
+    // ที่สถานะการล็อกอินของผู้ใช้มีการเปลี่ยนแปลง (เช่น ล็อกอิน, ล็อกเอาต์)
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // ถ้ามีผู้ใช้ล็อกอินในระบบ (firebaseUser ไม่ใช่ null)
+        // เราจะไปดึงข้อมูลโปรไฟล์เพิ่มเติมจาก Firestore collection 'users'
+        // โดยใช้ uid ของผู้ใช้เป็น key
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          // ถ้าเจอบันทึกข้อมูลผู้ใช้ใน Firestore
+          // ให้ตั้งค่า state ของ currentUser ด้วยข้อมูลนั้น
+          setCurrentUser({ id: userDoc.id, ...userDoc.data() } as User);
+        } else {
+          // กรณีที่ไม่เจอข้อมูลใน Firestore (อาจเกิดข้อผิดพลาดตอนสมัคร)
+          // ให้ล็อกผู้ใช้ออกจากระบบไปก่อน
+           setCurrentUser(null);
+        }
       } else {
-        setCurrentUser(user);
+        // ถ้าไม่มีผู้ใช้ล็อกอินในระบบ
+        setCurrentUser(null);
       }
-    } else {
-      setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
-    }
-  };
-  
-  const handleSignUp = (name: string, email: string, password: string) => {
-    setError(null);
-    if (users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
-        setError('ชื่อผู้ใช้นี้มีคนใช้แล้ว');
-        return;
-    }
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-        setError('อีเมลนี้ถูกใช้สมัครสมาชิกแล้ว');
-        return;
-    }
+      // เมื่อตรวจสอบเสร็จสิ้น ให้ปิดหน้า loading
+      setLoading(false);
+    });
 
-    const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
-    const newUser: User = {
-        id: newId,
-        uid: `USER${String(newId).padStart(4, '0')}`,
-        name,
-        email,
-        password,
-        avatar: `https://i.pravatar.cc/150?u=${newId}`,
-        color: 'text-gray-300', // Default rank for new users
-        bio: 'ยินดีที่ได้รู้จัก!',
-        level: 1,
-        isMuted: false,
-        isBanned: false,
-    };
-    
-    setUsers(prevUsers => [...prevUsers, newUser]);
-    setCurrentUser(newUser);
-  };
+    // Cleanup function: ยกเลิกการ subscribe listener เมื่อ component ถูก unmount
+    // เพื่อป้องกัน memory leak
+    return () => unsubscribe();
+  }, []); // dependency array เป็น [] หมายความว่า useEffect นี้จะทำงานแค่ครั้งเดียวตอน component โหลด
 
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setView('login');
-  };
-
-  const handleUpdateUser = (updatedUser: User) => {
-    setUsers(prevUsers =>
-      prevUsers.map(u => (u.id === updatedUser.id ? updatedUser : u))
+  // แสดงหน้า loading ขณะที่กำลังตรวจสอบสถานะ
+  if (loading) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+            <div>Loading...</div>
+        </div>
     );
-    if (currentUser && currentUser.id === updatedUser.id) {
-      setCurrentUser(updatedUser);
-    }
-  };
-
-  if (currentUser) {
-    return <ChatRoom allUsers={users} currentUser={currentUser} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />;
   }
 
-  if (view === 'signup') {
-    return <SignUp onSignUp={handleSignUp} onSwitchToLogin={() => { setView('login'); setError(null); }} error={error} />;
-  }
+  // ฟังก์ชันสำหรับสลับหน้า Login/SignUp
+  const toggleView = () => setIsLoginView(!isLoginView);
 
-  return <Login onLogin={handleLogin} onSwitchToSignUp={() => { setView('signup'); setError(null); }} error={error} />;
-};
+  return (
+    <div className="bg-gray-900 text-white min-h-screen flex flex-col">
+      {/* ถ้ามี currentUser (ล็อกอินแล้ว) ให้แสดงหน้า ChatPanel */}
+      {currentUser ? (
+        // ส่งข้อมูล currentUser ไปให้ ChatPanel เพื่อใช้งานต่อ
+        <ChatPanel currentUser={currentUser} />
+      ) : (
+        // ถ้ายังไม่ล็อกอิน ให้แสดงหน้า Login หรือ SignUp
+        <div className="flex items-center justify-center flex-grow">
+            {isLoginView ? (
+                <Login onSwitchToSignUp={toggleView} />
+            ) : (
+                <SignUp onSwitchToLogin={toggleView} />
+            )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default App;
