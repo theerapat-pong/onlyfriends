@@ -16,14 +16,14 @@ export interface Message {
   authorLevel?: number;
   styles?: MessageStyle;
   showVipBadge?: boolean;
+  authorUid: string;
+  createdAt?: any; // To hold serverTimestamp
 }
 
 export interface User {
-  id: number;
   uid: string;
   name: string;
   email: string;
-  password?: string; // Password should not be stored in state long-term, but is needed for mock auth
   avatar: string;
   color: string;
   isOwner?: boolean;

@@ -1,51 +1,34 @@
-import { useState, useEffect } from 'react';
-import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from './services/firebase';
-import { User, LogEntry } from './types';
-import { createLogEntry } from './services/loggingService';
-
-// Import Components
+import React, { useState, useEffect } from 'react';
+import { User } from './types';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
-import Header from './components/Header';
-import UserList from './components/UserList';
 import ChatRoom from './components/ChatRoom';
-import ChatInput from './components/ChatInput';
-import LogPanel from './components/LogPanel';
-import WelcomeNotification from './components/WelcomeNotification';
-import WelcomeTestPanel from './components/WelcomeTestPanel'; // For testing welcome UI
+import { auth, db } from './services/firebase';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut 
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, onSnapshot, collection, updateDoc } from 'firebase/firestore';
 
-function App() {
+const App = () => {
+  const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [view, setView] = useState<'login' | 'signup'>('login');
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLoginView, setIsLoginView] = useState(true);
-
-  // State for UI elements
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [welcomeInfo, setWelcomeInfo] = useState<{ name: string; rank: string } | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const userData = { ...userDoc.data(), id: userDoc.id } as User;
-          setCurrentUser(userData);
-          
-          // Set user online status
-          await updateDoc(userDocRef, { online: true });
-
-          // Add a log entry for login
-          addLog(`User ${userData.username} (${userData.id}) logged in.`, 'info');
-          
-          // Trigger welcome notification
-          setWelcomeInfo({ name: userData.username, rank: userData.color || 'text-rank-user' });
-          setTimeout(() => setWelcomeInfo(null), 5000); // Hide after 5 seconds
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      if (authUser) {
+        const userDocRef = doc(db, 'users', authUser.uid);
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+          setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
         } else {
+          // This case might happen if user is created in auth but not in firestore.
+          // For this app, we'll log them out to force a clean sign-up.
           await signOut(auth);
           setCurrentUser(null);
         }
@@ -58,91 +41,109 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    if (currentUser) {
-      // Set user offline status
-      const userDocRef = doc(db, 'users', currentUser.id);
-      await updateDoc(userDocRef, { online: false });
-      addLog(`User ${currentUser.username} (${currentUser.id}) logged out.`, 'info');
-    }
-    await signOut(auth);
-    setCurrentUser(null);
-  };
+  useEffect(() => {
+    const usersCollectionRef = collection(db, 'users');
+    const unsubscribe = onSnapshot(usersCollectionRef, (snapshot) => {
+      const usersList = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+      setUsers(usersList);
+    });
 
-  const addLog = (message: string, type: LogEntry['type']) => {
-    const newLog = createLogEntry(message, type);
-    setLogs(prevLogs => [...prevLogs, newLog]);
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async (email: string, password: string) => {
+    setError(null);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      } else {
+        setError('เกิดข้อผิดพลาดในการลงชื่อเข้าใช้');
+      }
+      console.error(err);
+    }
   };
   
-  const handleTestWelcome = (rank: string) => {
-    if(currentUser){
-        setWelcomeInfo({ name: currentUser.name, rank: rank });
-        setTimeout(() => setWelcomeInfo(null), 5000); // Hide after 5 seconds
+  const handleSignUp = async (name: string, email: string, password: string) => {
+    setError(null);
+    if (users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+        setError('ชื่อผู้ใช้นี้มีคนใช้แล้ว');
+        return;
+    }
+    // Firestore security rules should handle email uniqueness, but a client-side check is good UX.
+    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+        setError('อีเมลนี้ถูกใช้สมัครสมาชิกแล้ว');
+        return;
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      const isOwner = user.email === 'theerapat.info@gmail.com';
+
+      const newUser: User = {
+          uid: user.uid,
+          name,
+          email: user.email!,
+          avatar: `https://i.pravatar.cc/150?u=${user.uid}`,
+          color: isOwner ? 'text-rainbow-animated' : 'text-gray-300',
+          bio: 'ยินดีที่ได้รู้จัก!',
+          level: isOwner ? 99 : 1,
+          isMuted: false,
+          isBanned: false,
+          isOwner: isOwner
+      };
+      
+      await setDoc(doc(db, 'users', user.uid), newUser);
+      // onAuthStateChanged will handle setting the current user.
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        setError('อีเมลนี้ถูกใช้สมัครสมาชิกแล้ว');
+      } else {
+        setError('เกิดข้อผิดพลาดในการสมัครสมาชิก');
+      }
+      console.error(err);
     }
   };
 
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setView('login');
+    } catch (err) {
+      console.error("Error signing out: ", err);
+    }
+  };
+
+  const handleUpdateUser = async (updatedUser: Partial<User> & { uid: string }) => {
+    const userDocRef = doc(db, 'users', updatedUser.uid);
+    try {
+        await updateDoc(userDocRef, updatedUser);
+        // Optimistically update current user if it's them
+        if (currentUser && currentUser.uid === updatedUser.uid) {
+          setCurrentUser(prev => ({ ...prev!, ...updatedUser }));
+        }
+    } catch (error) {
+        console.error("Error updating user: ", error);
+    }
+  };
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-camfrog-bg text-white">
-        <div>Loading...</div>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-screen bg-camfrog-bg text-white">กำลังโหลด...</div>;
   }
 
-  const toggleView = () => setIsLoginView(!isLoginView);
+  if (currentUser) {
+    return <ChatRoom allUsers={users} currentUser={currentUser} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />;
+  }
 
-  return (
-    <div className="bg-camfrog-bg text-white min-h-screen flex flex-col">
-      {!currentUser ? (
-        <div className="flex items-center justify-center flex-grow">
-          {isLoginView ? (
-            <Login onSwitchToSignUp={toggleView} />
-          ) : (
-            <SignUp onSwitchToLogin={toggleView} />
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col h-screen">
-          <Header
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            isAuthorized={true} 
-            onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
-          />
-          {welcomeInfo && <WelcomeNotification name={welcomeInfo.name} rank={welcomeInfo.rank} />}
-          <main className="flex flex-1 overflow-hidden">
-            {/* User List Sidebar (Desktop) */}
-            <aside className="w-64 bg-camfrog-panel flex-shrink-0 hidden md:flex flex-col">
-              <UserList />
-            </aside>
-            
-            {/* Main Chat Area */}
-            <section className="flex-1 flex flex-col bg-camfrog-panel-light">
-              <ChatRoom currentUser={currentUser} />
-              <ChatInput currentUser={currentUser} />
-            </section>
-            
-            {/* Right Sidebar (Logs & Testing) */}
-            <aside className="w-80 bg-camfrog-panel flex-shrink-0 hidden lg:flex flex-col p-2">
-              <LogPanel logs={logs} />
-              {currentUser.isOwner && <WelcomeTestPanel onTestWelcome={handleTestWelcome} />}
-            </aside>
+  if (view === 'signup') {
+    return <SignUp onSignUp={handleSignUp} onSwitchToLogin={() => { setView('login'); setError(null); }} error={error} />;
+  }
 
-            {/* User List Sidebar (Mobile) */}
-            {isSidebarOpen && (
-                <div className="fixed inset-0 z-30 md:hidden">
-                    <div className="absolute inset-0 bg-black opacity-50" onClick={() => setSidebarOpen(false)}></div>
-                    <aside className="relative z-40 w-64 bg-camfrog-panel h-full flex flex-col">
-                       <UserList />
-                    </aside>
-                </div>
-            )}
-          </main>
-        </div>
-      )}
-    </div>
-  );
-}
+  return <Login onLogin={handleLogin} onSwitchToSignUp={() => { setView('signup'); setError(null); }} error={error} />;
+};
 
 export default App;

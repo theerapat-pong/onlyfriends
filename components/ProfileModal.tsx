@@ -13,7 +13,7 @@ interface ProfileModalProps {
 }
 
 const ProfileModal = ({ user, currentUser, onClose, onSave, isAuthorized }: ProfileModalProps) => {
-  const isCurrentUser = user.id === currentUser.id;
+  const isCurrentUser = user.uid === currentUser.uid;
 
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio || '');
@@ -80,7 +80,7 @@ const ProfileModal = ({ user, currentUser, onClose, onSave, isAuthorized }: Prof
                     <BotIcon className="w-16 h-16 text-white" />
                   </div>
                 ) : (
-                  <img src={avatar} alt={name} className="w-28 h-28 rounded-full object-cover ring-4 ring-camfrog-panel-light" onError={(e) => { e.currentTarget.src = `https://i.pravatar.cc/150?u=${user.id}`; }} />
+                  <img src={avatar} alt={name} className="w-28 h-28 rounded-full object-cover ring-4 ring-camfrog-panel-light" onError={(e) => { e.currentTarget.src = `https://i.pravatar.cc/150?u=${user.uid}`; }} />
                 )}
                 {isCurrentUser && (
                     <>

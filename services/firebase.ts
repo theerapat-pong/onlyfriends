@@ -1,27 +1,25 @@
-// src/services/firebase.ts
+/// <reference types="vite/client" />
 
-// Import functions from the Firebase SDKs
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// The web app's Firebase configuration, now read from Environment Variables.
-// Vite exposes environment variables on the `import.meta.env` object.
-// It's crucial to prefix variables with `VITE_` to make them accessible in client-side code.
+// Your web app's Firebase configuration using environment variables
+// These variables should be set in your deployment environment (e.g., Vercel, Netlify)
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
   authDomain: import.meta.env.VITE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID
+  appId: import.meta.env.VITE_APP_ID,
+  measurementId: import.meta.env.VITE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize and export Firebase services to be used across the app
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-export { auth, db };
+// Export Firebase services
+export const auth = getAuth(app);
+export const db = getFirestore(app);

@@ -66,7 +66,7 @@ const UserContextMenu = ({ x, y, currentUser, targetUser, onClose, onSetRank, on
   const currentUserRankIndex = RANK_HIERARCHY.indexOf(currentUser.color);
   const targetUserRankIndex = RANK_HIERARCHY.indexOf(targetUser.color);
 
-  const isSelf = currentUser.id === targetUser.id;
+  const isSelf = currentUser.uid === targetUser.uid;
   const isBot = targetUser.name === 'Gemini Bot';
   const isTargetOwner = !!targetUser.isOwner;
 

@@ -9,10 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.8.0",
-    "firebase": "^11.10.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom/client": "19",
+    "@google/genai": "^1.8.0",
+    "react-dom": "^19.1.0",
+    "firebase/app": "10.12.2",
+    "firebase/auth": "10.12.2",
+    "firebase/firestore": "10.12.2",
+    "firebase": "^11.10.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
