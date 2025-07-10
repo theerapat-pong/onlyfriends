@@ -3,10 +3,13 @@ import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 let chat: Chat | null = null;
 
 function initializeChat() {
-  if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set");
+  // Use Vite's method for accessing environment variables, which requires the VITE_ prefix.
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("VITE_GEMINI_API_KEY environment variable is not set. Please check your project's .env file or your deployment platform's environment variable settings.");
+    throw new Error("API key for the bot is not configured.");
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: apiKey });
   chat = ai.chats.create({
     model: 'gemini-2.5-flash',
     config: {
