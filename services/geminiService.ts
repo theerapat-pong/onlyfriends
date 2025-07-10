@@ -37,7 +37,7 @@ export const getBotResponse = async (message: string): Promise<string> => {
     });
 
     // Using response.text directly as per guidelines.
-    return response.text;
+    return response.text ?? '';
   } catch (e) {
     console.error("Error calling Gemini API:", e);
     // Re-throw the error to be handled by the calling function in ChatRoom.tsx
