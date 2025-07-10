@@ -12,7 +12,7 @@ import WelcomeNotification from './WelcomeNotification';
 import LogPanel from './LogPanel';
 import { UserGroupIcon, ListBulletIcon, XMarkIcon } from './Icons';
 import { db, rtdb } from '../services/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, where } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
 
 
@@ -81,6 +81,7 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
   const [onlineUserUids, setOnlineUserUids] = useState<string[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [activeTab, setActiveTab] = useState<'users' | 'logs'>('users');
+  const [joinTimestamp] = useState(() => new Date());
 
   const canViewLogs = useMemo(() => currentUser.isOwner || currentUser.color === 'text-rank-admin', [currentUser]);
 
@@ -108,6 +109,22 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
     setLogs(prev => [newLog, ...prev].slice(0, 200));
   }, []);
 
+  const addSystemMessage = useCallback(async (text: string) => {
+    const systemMessage: Omit<Message, 'id'> = {
+      author: 'System',
+      authorUid: 'system',
+      avatar: '',
+      text,
+      type: 'system',
+      createdAt: serverTimestamp(),
+    };
+    try {
+        await addDoc(collection(db, 'messages'), systemMessage);
+    } catch (error) {
+        console.error("Error adding system message:", error);
+    }
+  }, []);
+
   useEffect(() => {
     const statusRef = ref(rtdb, 'status');
     const unsubscribe = onValue(statusRef, (snapshot) => {
@@ -126,15 +143,23 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
   
   useEffect(() => {
     const messagesCollectionRef = collection(db, 'messages');
-    const q = query(messagesCollectionRef, orderBy('createdAt', 'asc'));
+    const q = query(
+        messagesCollectionRef, 
+        orderBy('createdAt', 'asc'),
+        where('createdAt', '>=', joinTimestamp)
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const messageList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
         setMessages(messageList);
+    },
+    (error) => {
+        console.error("Error fetching messages:", error);
+        addSystemMessage("เกิดข้อผิดพลาดในการโหลดข้อความ");
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [joinTimestamp, addSystemMessage]);
 
   useEffect(() => {
     setWelcomeInfo({
@@ -153,22 +178,6 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
     return () => clearTimeout(timer);
   }, [currentUser.uid, currentUser.name, currentUser.color, currentUser.isOwner, addLog]);
 
-
-  const addSystemMessage = useCallback(async (text: string) => {
-    const systemMessage: Omit<Message, 'id'> = {
-      author: 'System',
-      authorUid: 'system',
-      avatar: '',
-      text,
-      type: 'system',
-      createdAt: serverTimestamp(),
-    };
-    try {
-        await addDoc(collection(db, 'messages'), systemMessage);
-    } catch (error) {
-        console.error("Error adding system message:", error);
-    }
-  }, []);
 
   const addBotMessage = useCallback(async (text: string) => {
       const botMessage: Omit<Message, 'id'> = {

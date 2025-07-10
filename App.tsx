@@ -4,7 +4,7 @@ import Login from './components/Login';
 import SignUp from './components/SignUp';
 import ChatRoom from './components/ChatRoom';
 import { auth, db, rtdb } from './services/firebase';
-import * as firebaseAuth from 'firebase/auth';
+import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, getDoc, onSnapshot, collection, updateDoc } from 'firebase/firestore';
 import { ref, onValue, set, onDisconnect, serverTimestamp } from 'firebase/database';
 
@@ -18,7 +18,7 @@ const App = () => {
   useEffect(() => {
     let connectedListenerUnsubscribe: (() => void) | null = null;
 
-    const authUnsubscribe = firebaseAuth.onAuthStateChanged(auth, async (authUser) => {
+    const authUnsubscribe = onAuthStateChanged(auth, async (authUser) => {
       // Clean up previous RTDB listener if user logs out and back in without a page refresh
       if (connectedListenerUnsubscribe) {
         connectedListenerUnsubscribe();
@@ -52,7 +52,7 @@ const App = () => {
         if (docSnap.exists()) {
           setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
         } else {
-          await firebaseAuth.signOut(auth);
+          await signOut(auth);
           setCurrentUser(null);
         }
       } else {
@@ -82,7 +82,7 @@ const App = () => {
   const handleLogin = async (email: string, password: string) => {
     setError(null);
     try {
-      await firebaseAuth.signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
@@ -106,7 +106,7 @@ const App = () => {
     }
 
     try {
-      const userCredential = await firebaseAuth.createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
       const isOwner = user.email === 'theerapat.info@gmail.com';
@@ -139,14 +139,19 @@ const App = () => {
 
   const handleLogout = async () => {
     if (auth.currentUser) {
+      try {
         const userStatusDatabaseRef = ref(rtdb, '/status/' + auth.currentUser.uid);
         await set(userStatusDatabaseRef, {
-            state: 'offline',
-            last_changed: serverTimestamp(),
+          state: 'offline',
+          last_changed: serverTimestamp(),
         });
+      } catch (rtdbError) {
+        console.error("Could not update user status on logout:", rtdbError);
+        // Continue with logout even if status update fails
+      }
     }
     try {
-      await firebaseAuth.signOut(auth);
+      await signOut(auth);
       setView('login');
     } catch (err) {
       console.error("Error signing out: ", err);
