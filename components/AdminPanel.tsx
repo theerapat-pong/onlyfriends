@@ -119,6 +119,20 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
 
   const isPublicIdUnchanged = foundUser ? newPublicId.trim() === foundUser.publicId : true;
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
+
+  const handlePublicIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleUpdatePublicId();
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-camfrog-bg text-camfrog-text p-4 sm:p-8">
       <div className="max-w-4xl mx-auto w-full">
@@ -145,23 +159,25 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
             <label htmlFor="uid-search" className="block text-sm font-medium text-camfrog-text-muted mb-2">
               ค้นหาผู้ใช้ด้วย UID
             </label>
-            <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="flex space-x-2">
+            <div className="flex space-x-2">
               <input
                 id="uid-search"
                 type="text"
                 value={searchUid}
                 onChange={(e) => setSearchUid(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 placeholder="ใส่ UID ของผู้ใช้"
                 className="flex-grow bg-camfrog-panel-light border border-camfrog-panel-light rounded-md py-2 px-3 text-camfrog-text focus:outline-none focus:ring-2 focus:ring-camfrog-accent"
               />
               <button
-                type="submit"
-                disabled={isLoading}
+                type="button"
+                onClick={handleSearch}
+                disabled={isLoading || !searchUid.trim()}
                 className="bg-camfrog-accent hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'กำลังค้นหา...' : 'ค้นหา'}
               </button>
-            </form>
+            </div>
           </div>
           
           {/* Results and Management Area */}
@@ -218,7 +234,7 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
                         <p className="text-sm text-camfrog-text-muted mb-4">
                             โปรดตรวจสอบให้แน่ใจว่า ID ใหม่ไม่ซ้ำกับผู้อื่น
                         </p>
-                        <form onSubmit={(e) => { e.preventDefault(); handleUpdatePublicId(); }} className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2">
                             <div className="flex-grow">
                                 <label htmlFor="new-public-id" className="sr-only">Public ID ใหม่</label>
                                 <input 
@@ -226,18 +242,20 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
                                     type="text" 
                                     value={newPublicId}
                                     onChange={(e) => setNewPublicId(e.target.value)}
+                                    onKeyDown={handlePublicIdKeyDown}
                                     className="w-full bg-camfrog-bg border border-camfrog-panel rounded-md py-2 px-3 text-camfrog-text focus:outline-none focus:ring-2 focus:ring-camfrog-accent"
                                     placeholder="ใส่ Public ID ใหม่"
                                 />
                             </div>
                             <button 
-                                type="submit"
+                                type="button"
+                                onClick={handleUpdatePublicId}
                                 disabled={!newPublicId.trim() || isPublicIdUnchanged}
                                 className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md cursor-pointer disabled:bg-gray-600 disabled:cursor-not-allowed"
                             >
                                 อัปเดต ID
                             </button>
-                        </form>
+                        </div>
                     </div>
                 </div>
             ) : (
