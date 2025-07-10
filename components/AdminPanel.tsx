@@ -26,15 +26,17 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   
-  // State for editing the found user
+  // State for editing the found user, which is reset when foundUser changes
   const [selectedRank, setSelectedRank] = useState('');
   const [newPublicId, setNewPublicId] = useState('');
-  const [isUpdatingPublicId, setIsUpdatingPublicId] = useState(false);
 
   useEffect(() => {
     if (foundUser) {
       setSelectedRank(foundUser.color);
       setNewPublicId(foundUser.publicId);
+      // Clear messages when a new user is found
+      setError('');
+      setSuccessMessage('');
     } else {
       // Clear editing state when no user is selected
       setSelectedRank('');
@@ -83,13 +85,18 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
   };
   
   const handleUpdatePublicId = async () => {
-    if (!foundUser || !newPublicId.trim() || newPublicId.trim() === foundUser.publicId) {
+    if (!foundUser || !newPublicId.trim()) {
         return;
     }
     
-    setIsUpdatingPublicId(true);
-    setError('');
+    // No need to do anything if the ID is unchanged
+    if (newPublicId.trim() === foundUser.publicId) {
+        setError('Public ID ที่ป้อนคือ ID ปัจจุบัน');
+        return;
+    }
+    
     setSuccessMessage('');
+    setError('');
 
     try {
         const trimmedId = newPublicId.trim();
@@ -107,10 +114,10 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
     } catch (err) {
         console.error(err);
         setError('เกิดข้อผิดพลาดในการอัปเดต Public ID');
-    } finally {
-        setIsUpdatingPublicId(false);
     }
   };
+
+  const isPublicIdUnchanged = foundUser ? newPublicId.trim() === foundUser.publicId : true;
 
   return (
     <div className="flex flex-col min-h-screen bg-camfrog-bg text-camfrog-text p-4 sm:p-8">
@@ -156,80 +163,89 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
               </button>
             </form>
           </div>
-
-          {error && <p className="text-red-400 text-center my-4">{error}</p>}
-          {successMessage && <p className="text-green-400 text-center my-4">{successMessage}</p>}
-
-          {/* Found User Details & Management Tools */}
-          {foundUser && (
-            <div className="bg-camfrog-panel-light p-4 rounded-md animate-fade-in-down space-y-6">
-              {/* User Info */}
-              <div>
-                <div className="flex items-center space-x-4">
-                  <img src={foundUser.avatar} alt={foundUser.name} className="w-16 h-16 rounded-full object-cover"/>
-                  <div>
-                    <p className={`text-xl font-bold ${foundUser.color}`}>{foundUser.name}</p>
-                    <p className="text-sm text-camfrog-text-muted">{foundUser.email}</p>
-                    <p className="text-sm font-mono bg-camfrog-bg px-2 py-0.5 rounded-full inline-block mt-1">Public ID: {foundUser.publicId}</p>
-                    <p className="text-xs font-mono bg-camfrog-bg px-2 py-0.5 rounded-full inline-block mt-1 text-camfrog-text-muted/50">UID: {foundUser.uid}</p>
-                  </div>
+          
+          {/* Results and Management Area */}
+          <div className="mt-4 min-h-[300px]">
+            {isLoading ? (
+                <div className="flex justify-center items-center h-full">
+                    <p className="text-camfrog-text-muted">กำลังค้นหา...</p>
                 </div>
-              </div>
-
-              {/* Rank Management */}
-              <div className="border-t border-camfrog-panel pt-4">
-                <h3 className="text-lg font-semibold text-white mb-2">เปลี่ยน Rank</h3>
-                 <div className="flex items-center space-x-2">
-                   <select
-                    value={selectedRank}
-                    onChange={e => setSelectedRank(e.target.value)}
-                    disabled={foundUser.isOwner}
-                    className="flex-grow bg-camfrog-bg text-camfrog-text text-sm rounded-md p-2 border border-camfrog-panel focus:outline-none focus:ring-2 focus:ring-camfrog-accent disabled:opacity-50"
-                   >
-                    {Object.entries(RANK_OPTIONS).map(([name, value]) => (
-                      <option key={value} value={value}>{name}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleUpdateRank}
-                    disabled={foundUser.isOwner || foundUser.color === selectedRank}
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed"
-                  >
-                    อัปเดต Rank
-                  </button>
-                 </div>
-              </div>
-
-              {/* Public ID Management */}
-              <div className="border-t border-camfrog-panel pt-4">
-                <h3 className="text-lg font-semibold text-white mb-2">เปลี่ยน Public ID</h3>
-                <p className="text-sm text-camfrog-text-muted mb-4">
-                    โปรดตรวจสอบให้แน่ใจว่า ID ใหม่ไม่ซ้ำกับผู้อื่น
-                </p>
-                <form onSubmit={(e) => { e.preventDefault(); handleUpdatePublicId(); }} className="flex items-center space-x-2">
-                    <div className="flex-grow">
-                        <label htmlFor="new-public-id" className="sr-only">Public ID ใหม่</label>
-                        <input 
-                            id="new-public-id" 
-                            type="text" 
-                            value={newPublicId}
-                            onChange={(e) => setNewPublicId(e.target.value)}
-                            disabled={isUpdatingPublicId} 
-                            className="w-full bg-camfrog-bg border border-camfrog-panel rounded-md py-2 px-3 text-camfrog-text focus:outline-none focus:ring-2 focus:ring-camfrog-accent disabled:cursor-not-allowed disabled:opacity-50"
-                            placeholder="ใส่ Public ID ใหม่"
-                        />
+            ) : foundUser ? (
+                <div className="bg-camfrog-panel-light p-4 rounded-md animate-fade-in-down space-y-6">
+                    {/* User Info */}
+                    <div>
+                        <div className="flex items-center space-x-4">
+                            <img src={foundUser.avatar} alt={foundUser.name} className="w-16 h-16 rounded-full object-cover"/>
+                            <div>
+                                <p className={`text-xl font-bold ${foundUser.color}`}>{foundUser.name}</p>
+                                <p className="text-sm text-camfrog-text-muted">{foundUser.email}</p>
+                                <p className="text-sm font-mono bg-camfrog-bg px-2 py-0.5 rounded-full inline-block mt-1">Public ID: {foundUser.publicId}</p>
+                                <p className="text-xs font-mono bg-camfrog-bg px-2 py-0.5 rounded-full inline-block mt-1 text-camfrog-text-muted/50">UID: {foundUser.uid}</p>
+                            </div>
+                        </div>
                     </div>
-                    <button 
-                        type="submit"
-                        disabled={isUpdatingPublicId || !newPublicId.trim() || newPublicId.trim() === foundUser.publicId}
-                        className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md cursor-pointer disabled:bg-gray-600 disabled:cursor-not-allowed"
-                    >
-                        {isUpdatingPublicId ? 'กำลังอัปเดต...' : 'อัปเดต ID'}
-                    </button>
-                </form>
-              </div>
+                    
+                    {successMessage && <p className="text-green-400 text-center">{successMessage}</p>}
+                    {error && <p className="text-red-400 text-center">{error}</p>}
+
+                    {/* Rank Management */}
+                    <div className="border-t border-camfrog-panel pt-4">
+                        <h3 className="text-lg font-semibold text-white mb-2">เปลี่ยน Rank</h3>
+                        <div className="flex items-center space-x-2">
+                        <select
+                            value={selectedRank}
+                            onChange={e => setSelectedRank(e.target.value)}
+                            disabled={foundUser.isOwner}
+                            className="flex-grow bg-camfrog-bg text-camfrog-text text-sm rounded-md p-2 border border-camfrog-panel focus:outline-none focus:ring-2 focus:ring-camfrog-accent disabled:opacity-50"
+                        >
+                            {Object.entries(RANK_OPTIONS).map(([name, value]) => (
+                            <option key={value} value={value}>{name}</option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={handleUpdateRank}
+                            disabled={foundUser.isOwner || foundUser.color === selectedRank}
+                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed"
+                        >
+                            อัปเดต Rank
+                        </button>
+                        </div>
+                    </div>
+
+                    {/* Public ID Management */}
+                    <div className="border-t border-camfrog-panel pt-4">
+                        <h3 className="text-lg font-semibold text-white mb-2">เปลี่ยน Public ID</h3>
+                        <p className="text-sm text-camfrog-text-muted mb-4">
+                            โปรดตรวจสอบให้แน่ใจว่า ID ใหม่ไม่ซ้ำกับผู้อื่น
+                        </p>
+                        <form onSubmit={(e) => { e.preventDefault(); handleUpdatePublicId(); }} className="flex items-center space-x-2">
+                            <div className="flex-grow">
+                                <label htmlFor="new-public-id" className="sr-only">Public ID ใหม่</label>
+                                <input 
+                                    id="new-public-id" 
+                                    type="text" 
+                                    value={newPublicId}
+                                    onChange={(e) => setNewPublicId(e.target.value)}
+                                    className="w-full bg-camfrog-bg border border-camfrog-panel rounded-md py-2 px-3 text-camfrog-text focus:outline-none focus:ring-2 focus:ring-camfrog-accent"
+                                    placeholder="ใส่ Public ID ใหม่"
+                                />
+                            </div>
+                            <button 
+                                type="submit"
+                                disabled={!newPublicId.trim() || isPublicIdUnchanged}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md cursor-pointer disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                                อัปเดต ID
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex justify-center items-center h-full">
+                    <p className="text-camfrog-text-muted">{error ? error : 'กรุณาค้นหาผู้ใช้เพื่อเริ่มการจัดการ'}</p>
+                </div>
+            )}
             </div>
-          )}
         </div>
       </div>
     </div>
