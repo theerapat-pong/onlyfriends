@@ -3,14 +3,10 @@ import { User } from './types';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
 import ChatRoom from './components/ChatRoom';
-import { auth, db } from './services/firebase';
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut 
-} from 'firebase/auth';
+import { auth, db, rtdb } from './services/firebase';
+import * as firebaseAuth from 'firebase/auth';
 import { doc, setDoc, getDoc, onSnapshot, collection, updateDoc } from 'firebase/firestore';
+import { ref, onValue, set, onDisconnect, serverTimestamp } from 'firebase/database';
 
 const App = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -20,16 +16,43 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+    let connectedListenerUnsubscribe: (() => void) | null = null;
+
+    const authUnsubscribe = firebaseAuth.onAuthStateChanged(auth, async (authUser) => {
+      // Clean up previous RTDB listener if user logs out and back in without a page refresh
+      if (connectedListenerUnsubscribe) {
+        connectedListenerUnsubscribe();
+        connectedListenerUnsubscribe = null;
+      }
+
       if (authUser) {
+        // --- Presence System Logic ---
+        const userStatusDatabaseRef = ref(rtdb, '/status/' + authUser.uid);
+        const connectedRef = ref(rtdb, '.info/connected');
+        
+        connectedListenerUnsubscribe = onValue(connectedRef, (snap) => {
+          if (snap.val() === true) {
+            const conStatus = {
+              state: 'online',
+              last_changed: serverTimestamp(),
+            };
+            set(userStatusDatabaseRef, conStatus);
+            
+            const disconStatus = {
+              state: 'offline',
+              last_changed: serverTimestamp(),
+            };
+            onDisconnect(userStatusDatabaseRef).set(disconStatus);
+          }
+        });
+        // --- End Presence System Logic ---
+
         const userDocRef = doc(db, 'users', authUser.uid);
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
           setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
         } else {
-          // This case might happen if user is created in auth but not in firestore.
-          // For this app, we'll log them out to force a clean sign-up.
-          await signOut(auth);
+          await firebaseAuth.signOut(auth);
           setCurrentUser(null);
         }
       } else {
@@ -38,7 +61,12 @@ const App = () => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+        authUnsubscribe();
+        if (connectedListenerUnsubscribe) {
+            connectedListenerUnsubscribe();
+        }
+    };
   }, []);
 
   useEffect(() => {
@@ -54,7 +82,7 @@ const App = () => {
   const handleLogin = async (email: string, password: string) => {
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await firebaseAuth.signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
@@ -78,7 +106,7 @@ const App = () => {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await firebaseAuth.createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
       const isOwner = user.email === 'theerapat.info@gmail.com';
@@ -110,8 +138,15 @@ const App = () => {
 
 
   const handleLogout = async () => {
+    if (auth.currentUser) {
+        const userStatusDatabaseRef = ref(rtdb, '/status/' + auth.currentUser.uid);
+        await set(userStatusDatabaseRef, {
+            state: 'offline',
+            last_changed: serverTimestamp(),
+        });
+    }
     try {
-      await signOut(auth);
+      await firebaseAuth.signOut(auth);
       setView('login');
     } catch (err) {
       console.error("Error signing out: ", err);

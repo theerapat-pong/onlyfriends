@@ -11,8 +11,9 @@ import UserContextMenu from './UserContextMenu';
 import WelcomeNotification from './WelcomeNotification';
 import LogPanel from './LogPanel';
 import { UserGroupIcon, ListBulletIcon, XMarkIcon } from './Icons';
-import { db } from '../services/firebase';
+import { db, rtdb } from '../services/firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { ref, onValue } from 'firebase/database';
 
 
 const BOT_USER: User = { uid: 'GMNB0T', name: 'Gemini Bot', email: 'bot@example.com', avatar: 'bot', color: 'text-rank-user', bio: 'I am a helpful assistant bot.', level: 0 };
@@ -77,17 +78,26 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, targetUser: User } | null>(null);
   const [kickedUserUids, setKickedUserUids] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  const [onlineUserUids, setOnlineUserUids] = useState<string[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [activeTab, setActiveTab] = useState<'users' | 'logs'>('users');
 
   const canViewLogs = useMemo(() => currentUser.isOwner || currentUser.color === 'text-rank-admin', [currentUser]);
 
   const users = useMemo(() => {
-    const combinedUsers = [BOT_USER, ...allUsers];
-    return getSortedUsers(combinedUsers)
-        .filter(u => !u.isBanned && !kickedUserUids.includes(u.uid));
-  }, [allUsers, kickedUserUids]);
+    const onlineUidSet = new Set(onlineUserUids);
+    // The current user might not appear in the RTDB list immediately upon login, so we add them manually to ensure they see themselves.
+    onlineUidSet.add(currentUser.uid);
+
+    const onlineUsers = allUsers.filter(u => 
+        onlineUidSet.has(u.uid) &&
+        !u.isBanned &&
+        !kickedUserUids.includes(u.uid)
+    );
+
+    const combinedUsers = [BOT_USER, ...onlineUsers];
+    return getSortedUsers(combinedUsers);
+  }, [allUsers, onlineUserUids, kickedUserUids, currentUser.uid]);
 
   const currentRoomId = 'onlyfriends-main';
   const vipAuthorizedRooms = ['onlyfriends-main'];
@@ -96,6 +106,16 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
   const addLog = useCallback((message: string, type: LogType) => {
     const newLog = createLogEntry(message, type);
     setLogs(prev => [newLog, ...prev].slice(0, 200));
+  }, []);
+
+  useEffect(() => {
+    const statusRef = ref(rtdb, 'status');
+    const unsubscribe = onValue(statusRef, (snapshot) => {
+        const statuses = snapshot.val() || {};
+        const onlineUids = Object.keys(statuses).filter(uid => statuses[uid].state === 'online');
+        setOnlineUserUids(onlineUids);
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
