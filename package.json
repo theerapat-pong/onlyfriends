@@ -11,8 +11,8 @@
   "dependencies": {
     "@google/genai": "^1.8.0",
     "firebase": "^10.12.2",
-    "react": "^19.0.0-rc.0",
-    "react-dom": "^19.0.0-rc.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
