@@ -33,7 +33,7 @@ export const getBotResponse = async (message: string): Promise<string> => {
   
   try {
     const response: GenerateContentResponse = await chat.sendMessage({ message });
-    return response.text;
+    return response.text ?? '';
   } catch(e) {
     console.error("Error sending message to Gemini:", e);
     // In case of an error, re-initialize the chat for the next attempt
