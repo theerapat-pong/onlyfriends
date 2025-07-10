@@ -14,7 +14,7 @@ import { UserGroupIcon, ListBulletIcon, XMarkIcon } from './Icons';
 import { db, rtdb, firebase } from '../services/firebase';
 
 
-const BOT_USER: User = { uid: 'GMNB0T', name: 'Gemini Bot', email: 'bot@example.com', avatar: 'bot', color: 'text-rank-user', bio: 'I am a helpful assistant bot.', level: 0 };
+const BOT_USER: User = { uid: 'GMNB0T', publicId: 'BOT-001', name: 'Gemini Bot', email: 'bot@example.com', avatar: 'bot', color: 'text-rank-user', bio: 'I am a helpful assistant bot.', level: 0 };
 
 const RANK_HIERARCHY = [
   'text-rainbow-animated', // Owner

@@ -124,6 +124,15 @@ const App = () => {
     }
   };
   
+  const generateUniquePublicId = (existingUsers: User[]): string => {
+    const generate = () => 'OF-' + crypto.randomUUID().substring(0, 6).toUpperCase();
+    let newId = generate();
+    while (existingUsers.some(u => u.publicId === newId)) {
+        newId = generate();
+    }
+    return newId;
+  };
+
   const handleSignUp = async (name: string, email: string, password: string) => {
     setError(null);
     if (users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
@@ -142,9 +151,11 @@ const App = () => {
       if (!user) throw new Error("User creation failed.");
       
       const isOwner = user.email === 'theerapat.info@gmail.com';
+      const publicId = generateUniquePublicId(users);
 
       const newUser: User = {
           uid: user.uid,
+          publicId,
           name,
           email: user.email!,
           avatar: `https://i.pravatar.cc/150?u=${user.uid}`,
@@ -204,6 +215,7 @@ const App = () => {
         }
     } catch (error) {
         console.error("Error updating user: ", error);
+        throw error; // Re-throw to be caught in AdminPanel
     }
   };
 

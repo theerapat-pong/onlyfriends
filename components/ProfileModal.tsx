@@ -12,7 +12,7 @@ interface ProfileModalProps {
   isAuthorized: boolean;
 }
 
-const ProfileModal = ({ user, currentUser, onClose, onSave, isAuthorized }: ProfileModalProps) => {
+const ProfileModal = ({ user, currentUser, onSave, onClose, isAuthorized }: ProfileModalProps) => {
   const isCurrentUser = user.uid === currentUser.uid;
 
   const [name, setName] = useState(user.name);
@@ -110,7 +110,10 @@ const ProfileModal = ({ user, currentUser, onClose, onSave, isAuthorized }: Prof
                     <LevelBadge level={isCurrentUser ? level : user.level} />
                 </div>
                 <div className="mt-2 text-sm font-mono bg-camfrog-panel-light px-3 py-1 rounded-full text-camfrog-text-muted">
-                  {user.uid}
+                  Public ID: {user.publicId}
+                </div>
+                 <div className="mt-1 text-xs font-mono bg-camfrog-bg px-2 py-0.5 rounded-full text-camfrog-text-muted/50">
+                  UID: {user.uid}
                 </div>
              </div>
           </div>

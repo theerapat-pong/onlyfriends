@@ -19,17 +19,24 @@ interface AdminPanelProps {
   currentUser: User;
 }
 
-const AdminPanel = ({ onNavigate, onUpdateUser, currentUser }: AdminPanelProps) => {
+const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
   const [searchUid, setSearchUid] = useState('');
   const [foundUser, setFoundUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedRank, setSelectedRank] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  
+  const [newPublicId, setNewPublicId] = useState('');
+  const [isUpdatingPublicId, setIsUpdatingPublicId] = useState(false);
+
 
   useEffect(() => {
     if (foundUser) {
       setSelectedRank(foundUser.color);
+      setNewPublicId(foundUser.publicId);
+    } else {
+        setNewPublicId('');
     }
   }, [foundUser]);
 
@@ -65,7 +72,6 @@ const AdminPanel = ({ onNavigate, onUpdateUser, currentUser }: AdminPanelProps) 
     setError('');
     try {
       await onUpdateUser({ uid: foundUser.uid, color: selectedRank });
-      // This will cause a re-render with the new rank color
       setFoundUser(prev => prev ? { ...prev, color: selectedRank } : null);
       setSuccessMessage(`เปลี่ยน Rank ของ ${foundUser.name} สำเร็จแล้ว`);
     } catch (err) {
@@ -73,6 +79,40 @@ const AdminPanel = ({ onNavigate, onUpdateUser, currentUser }: AdminPanelProps) 
       setError('เกิดข้อผิดพลาดในการอัปเดต Rank');
     }
   };
+  
+  const handleUpdatePublicId = async () => {
+    if (!foundUser || !newPublicId.trim() || newPublicId.trim() === foundUser.publicId) {
+        return;
+    }
+    
+    setIsUpdatingPublicId(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+        // Check for uniqueness
+        const trimmedId = newPublicId.trim();
+        const q = db.collection('users').where('publicId', '==', trimmedId);
+        const querySnapshot = await q.get();
+
+        if (!querySnapshot.empty) {
+            setError(`Public ID "${trimmedId}" นี้มีผู้ใช้อื่นใช้แล้ว`);
+            setIsUpdatingPublicId(false);
+            return;
+        }
+
+        await onUpdateUser({ uid: foundUser.uid, publicId: trimmedId });
+        setFoundUser(prev => prev ? { ...prev, publicId: trimmedId } : null);
+        setSuccessMessage(`เปลี่ยน Public ID ของ ${foundUser.name} สำเร็จแล้ว`);
+
+    } catch (err) {
+        console.error(err);
+        setError('เกิดข้อผิดพลาดในการอัปเดต Public ID');
+    } finally {
+        setIsUpdatingPublicId(false);
+    }
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-camfrog-bg text-camfrog-text p-4 sm:p-8">
@@ -132,7 +172,8 @@ const AdminPanel = ({ onNavigate, onUpdateUser, currentUser }: AdminPanelProps) 
                   <div>
                     <p className={`text-xl font-bold ${foundUser.color}`}>{foundUser.name}</p>
                     <p className="text-sm text-camfrog-text-muted">{foundUser.email}</p>
-                    <p className="text-xs font-mono bg-camfrog-bg px-2 py-0.5 rounded-full inline-block mt-1">{foundUser.uid}</p>
+                    <p className="text-sm font-mono bg-camfrog-bg px-2 py-0.5 rounded-full inline-block mt-1">Public ID: {foundUser.publicId}</p>
+                    <p className="text-xs font-mono bg-camfrog-bg px-2 py-0.5 rounded-full inline-block mt-1 text-camfrog-text-muted/50">UID: {foundUser.uid}</p>
                   </div>
                 </div>
 
@@ -152,7 +193,7 @@ const AdminPanel = ({ onNavigate, onUpdateUser, currentUser }: AdminPanelProps) 
                     </select>
                     <button
                       onClick={handleUpdateRank}
-                      disabled={foundUser.isOwner}
+                      disabled={foundUser.isOwner || foundUser.color === selectedRank}
                       className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed"
                     >
                       อัปเดต Rank
@@ -163,27 +204,38 @@ const AdminPanel = ({ onNavigate, onUpdateUser, currentUser }: AdminPanelProps) 
             )}
           </div>
           
-           {/* UID Change Section - OMITTED */}
-           <div className="bg-camfrog-panel p-6 rounded-lg shadow-xl opacity-50">
-                <h2 className="text-xl font-bold text-white mb-4">เปลี่ยน UID (ปิดใช้งาน)</h2>
+           {/* Public ID Change Section */}
+           <div className="bg-camfrog-panel p-6 rounded-lg shadow-xl">
+                <h2 className="text-xl font-bold text-white mb-4">เปลี่ยน Public ID</h2>
                 <p className="text-sm text-camfrog-text-muted mb-4">
-                    ฟีเจอร์นี้ถูกปิดใช้งานเนื่องจาก UID ของผู้ใช้ผูกกับระบบยืนยันตัวตนของ Firebase และไม่สามารถเปลี่ยนแปลงได้โดยไม่ทำให้ข้อมูลผู้ใช้เสียหายอย่างถาวร
+                    ใช้ส่วนนี้เพื่อเปลี่ยน Public ID ของผู้ใช้ (รหัสที่แสดงต่อสาธารณะ) โปรดตรวจสอบให้แน่ใจว่า ID ใหม่ไม่ซ้ำกับผู้อื่น
                 </p>
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-camfrog-text-muted mb-2">UID เดิม</label>
-                        <input type="text" disabled className="w-full bg-camfrog-panel-light rounded-md py-2 px-3 cursor-not-allowed"/>
+                <form onSubmit={(e) => { e.preventDefault(); handleUpdatePublicId(); }} className="space-y-4">
+                     <div>
+                        <label htmlFor="current-public-id" className="block text-sm font-medium text-camfrog-text-muted mb-2">Public ID ปัจจุบัน</label>
+                        <input id="current-public-id" type="text" value={foundUser?.publicId || ''} disabled className="w-full bg-camfrog-panel-light rounded-md py-2 px-3 cursor-not-allowed text-camfrog-text-muted"/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-camfrog-text-muted mb-2">UID ใหม่</label>
-                        <input type="text" disabled className="w-full bg-camfrog-panel-light rounded-md py-2 px-3 cursor-not-allowed"/>
+                        <label htmlFor="new-public-id" className="block text-sm font-medium text-camfrog-text-muted mb-2">Public ID ใหม่</label>
+                        <input 
+                            id="new-public-id" 
+                            type="text" 
+                            value={newPublicId}
+                            onChange={(e) => setNewPublicId(e.target.value)}
+                            disabled={!foundUser || isUpdatingPublicId} 
+                            className="w-full bg-camfrog-bg border border-camfrog-panel rounded-md py-2 px-3 text-camfrog-text focus:outline-none focus:ring-2 focus:ring-camfrog-accent disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder={!foundUser ? "โปรดค้นหาผู้ใช้ก่อน" : "ใส่ Public ID ใหม่"}
+                        />
                     </div>
-                    <button disabled className="w-full bg-gray-600 text-white font-semibold py-2 px-4 rounded-md cursor-not-allowed">
-                        ยืนยันการเปลี่ยน UID
+                    <button 
+                        type="submit"
+                        disabled={!foundUser || isUpdatingPublicId || !newPublicId.trim() || newPublicId.trim() === foundUser.publicId}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md cursor-pointer disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    >
+                        {isUpdatingPublicId ? 'กำลังอัปเดต...' : 'ยืนยันการเปลี่ยน Public ID'}
                     </button>
-                </div>
+                </form>
             </div>
-
         </div>
       </div>
     </div>

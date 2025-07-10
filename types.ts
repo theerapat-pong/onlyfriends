@@ -22,6 +22,7 @@ export interface Message {
 
 export interface User {
   uid: string;
+  publicId: string;
   name: string;
   email: string;
   avatar: string;
