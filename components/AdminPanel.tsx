@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
 import { db } from '../services/firebase';
 import { ShieldCheckIcon } from './Icons';
@@ -26,23 +26,9 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   
-  // State for editing the found user, which is reset when foundUser changes
+  // State for editing the found user
   const [selectedRank, setSelectedRank] = useState('');
   const [newPublicId, setNewPublicId] = useState('');
-
-  useEffect(() => {
-    if (foundUser) {
-      setSelectedRank(foundUser.color);
-      setNewPublicId(foundUser.publicId);
-      // Clear messages when a new user is found
-      setError('');
-      setSuccessMessage('');
-    } else {
-      // Clear editing state when no user is selected
-      setSelectedRank('');
-      setNewPublicId('');
-    }
-  }, [foundUser]);
 
   const handleSearch = async () => {
     if (!searchUid.trim()) return;
@@ -50,11 +36,17 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
     setError('');
     setSuccessMessage('');
     setFoundUser(null);
+    setSelectedRank('');
+    setNewPublicId('');
+
     try {
       const userDocRef = db.collection('users').doc(searchUid.trim());
       const docSnap = await userDocRef.get();
       if (docSnap.exists) {
-        setFoundUser({ uid: docSnap.id, ...docSnap.data() } as User);
+        const userData = { uid: docSnap.id, ...docSnap.data() } as User;
+        setFoundUser(userData);
+        setSelectedRank(userData.color);
+        setNewPublicId(userData.publicId);
       } else {
         setError('ไม่พบผู้ใช้ที่มี UID นี้');
       }
@@ -129,7 +121,9 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
   const handlePublicIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleUpdatePublicId();
+      if (!isPublicIdUnchanged) {
+          handleUpdatePublicId();
+      }
     }
   };
 
@@ -219,6 +213,7 @@ const AdminPanel = ({ onNavigate, onUpdateUser }: AdminPanelProps) => {
                             ))}
                         </select>
                         <button
+                            type="button"
                             onClick={handleUpdateRank}
                             disabled={foundUser.isOwner || foundUser.color === selectedRank}
                             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed"
