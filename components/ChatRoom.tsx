@@ -11,9 +11,7 @@ import UserContextMenu from './UserContextMenu';
 import WelcomeNotification from './WelcomeNotification';
 import LogPanel from './LogPanel';
 import { UserGroupIcon, ListBulletIcon, XMarkIcon } from './Icons';
-import { db, rtdb } from '../services/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, where } from 'firebase/firestore';
-import { ref, onValue } from 'firebase/database';
+import { db, rtdb, firebase } from '../services/firebase';
 
 
 const BOT_USER: User = { uid: 'GMNB0T', name: 'Gemini Bot', email: 'bot@example.com', avatar: 'bot', color: 'text-rank-user', bio: 'I am a helpful assistant bot.', level: 0 };
@@ -116,23 +114,24 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
       avatar: '',
       text,
       type: 'system',
-      createdAt: serverTimestamp(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
     try {
-        await addDoc(collection(db, 'messages'), systemMessage);
+        await db.collection('messages').add(systemMessage);
     } catch (error) {
         console.error("Error adding system message:", error);
     }
   }, []);
 
   useEffect(() => {
-    const statusRef = ref(rtdb, 'status');
-    const unsubscribe = onValue(statusRef, (snapshot) => {
+    const statusRef = rtdb.ref('status');
+    const callback = (snapshot: firebase.database.DataSnapshot) => {
         const statuses = snapshot.val() || {};
         const onlineUids = Object.keys(statuses).filter(uid => statuses[uid].state === 'online');
         setOnlineUserUids(onlineUids);
-    });
-    return () => unsubscribe();
+    };
+    statusRef.on('value', callback);
+    return () => statusRef.off('value', callback);
   }, []);
 
   useEffect(() => {
@@ -142,14 +141,12 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
   }, [canViewLogs, activeTab]);
   
   useEffect(() => {
-    const messagesCollectionRef = collection(db, 'messages');
-    const q = query(
-        messagesCollectionRef, 
-        orderBy('createdAt', 'asc'),
-        where('createdAt', '>=', joinTimestamp)
-    );
+    const messagesCollectionRef = db.collection('messages');
+    const q = messagesCollectionRef
+        .orderBy('createdAt', 'asc')
+        .where('createdAt', '>=', joinTimestamp);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = q.onSnapshot((snapshot) => {
         const messageList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
         setMessages(messageList);
     },
@@ -187,9 +184,9 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
         text: text,
         type: 'bot',
         authorColor: BOT_USER.color,
-        createdAt: serverTimestamp(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
-      await addDoc(collection(db, 'messages'), botMessage);
+      await db.collection('messages').add(botMessage);
   }, []);
 
   const handleRankChangeCommand = useCallback(async (thaiColor: string, targetUid: string) => {
@@ -256,10 +253,10 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
       authorLevel: currentUser.level,
       styles,
       showVipBadge: isVipAuthorizedInCurrentRoom,
-      createdAt: serverTimestamp(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
 
-    await addDoc(collection(db, 'messages'), userMessage);
+    await db.collection('messages').add(userMessage);
     addLog(`[Message] ${currentUser.uid}: ${text}`, 'action');
 
     const parts = text.trim().split(' ');

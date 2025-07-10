@@ -3,10 +3,7 @@ import { User } from './types';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
 import ChatRoom from './components/ChatRoom';
-import { auth, db, rtdb } from './services/firebase';
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc, onSnapshot, collection, updateDoc } from 'firebase/firestore';
-import { ref, onValue, set, onDisconnect, serverTimestamp } from 'firebase/database';
+import { auth, db, rtdb, firebase } from './services/firebase';
 
 const App = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -16,43 +13,45 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let connectedListenerUnsubscribe: (() => void) | null = null;
+    let unsubscribeFromRtdb: (() => void) | null = null;
 
-    const authUnsubscribe = onAuthStateChanged(auth, async (authUser) => {
+    const authUnsubscribe = auth.onAuthStateChanged(async (authUser) => {
       // Clean up previous RTDB listener if user logs out and back in without a page refresh
-      if (connectedListenerUnsubscribe) {
-        connectedListenerUnsubscribe();
-        connectedListenerUnsubscribe = null;
+      if (unsubscribeFromRtdb) {
+        unsubscribeFromRtdb();
+        unsubscribeFromRtdb = null;
       }
 
       if (authUser) {
         // --- Presence System Logic ---
-        const userStatusDatabaseRef = ref(rtdb, '/status/' + authUser.uid);
-        const connectedRef = ref(rtdb, '.info/connected');
+        const userStatusDatabaseRef = rtdb.ref('/status/' + authUser.uid);
+        const connectedRef = rtdb.ref('.info/connected');
         
-        connectedListenerUnsubscribe = onValue(connectedRef, (snap) => {
+        const rtdbCallback = (snap: firebase.database.DataSnapshot) => {
           if (snap.val() === true) {
             const conStatus = {
               state: 'online',
-              last_changed: serverTimestamp(),
+              last_changed: firebase.database.ServerValue.TIMESTAMP,
             };
-            set(userStatusDatabaseRef, conStatus);
+            userStatusDatabaseRef.set(conStatus);
             
             const disconStatus = {
               state: 'offline',
-              last_changed: serverTimestamp(),
+              last_changed: firebase.database.ServerValue.TIMESTAMP,
             };
-            onDisconnect(userStatusDatabaseRef).set(disconStatus);
+            userStatusDatabaseRef.onDisconnect().set(disconStatus);
           }
-        });
+        };
+        connectedRef.on('value', rtdbCallback);
+        unsubscribeFromRtdb = () => connectedRef.off('value', rtdbCallback);
         // --- End Presence System Logic ---
 
-        const userDocRef = doc(db, 'users', authUser.uid);
-        const docSnap = await getDoc(userDocRef);
-        if (docSnap.exists()) {
+        const userDocRef = db.collection('users').doc(authUser.uid);
+        const docSnap = await userDocRef.get();
+        if (docSnap.exists) {
           setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
         } else {
-          await signOut(auth);
+          await auth.signOut();
           setCurrentUser(null);
         }
       } else {
@@ -63,15 +62,15 @@ const App = () => {
 
     return () => {
         authUnsubscribe();
-        if (connectedListenerUnsubscribe) {
-            connectedListenerUnsubscribe();
+        if (unsubscribeFromRtdb) {
+            unsubscribeFromRtdb();
         }
     };
   }, []);
 
   useEffect(() => {
-    const usersCollectionRef = collection(db, 'users');
-    const unsubscribe = onSnapshot(usersCollectionRef, (snapshot) => {
+    const usersCollectionRef = db.collection('users');
+    const unsubscribe = usersCollectionRef.onSnapshot((snapshot) => {
       const usersList = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
       setUsers(usersList);
     });
@@ -82,7 +81,7 @@ const App = () => {
   const handleLogin = async (email: string, password: string) => {
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await auth.signInWithEmailAndPassword(email, password);
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
@@ -106,8 +105,9 @@ const App = () => {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
       const user = userCredential.user;
+      if (!user) throw new Error("User creation failed.");
       
       const isOwner = user.email === 'theerapat.info@gmail.com';
 
@@ -124,7 +124,7 @@ const App = () => {
           isOwner: isOwner
       };
       
-      await setDoc(doc(db, 'users', user.uid), newUser);
+      await db.collection('users').doc(user.uid).set(newUser);
       // onAuthStateChanged will handle setting the current user.
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -139,29 +139,32 @@ const App = () => {
 
   const handleLogout = async () => {
     if (auth.currentUser) {
-      try {
-        const userStatusDatabaseRef = ref(rtdb, '/status/' + auth.currentUser.uid);
-        await set(userStatusDatabaseRef, {
-          state: 'offline',
-          last_changed: serverTimestamp(),
-        });
-      } catch (rtdbError) {
+      const userStatusDatabaseRef = rtdb.ref('/status/' + auth.currentUser.uid);
+      // Update status without waiting, to make logout feel faster.
+      // If it fails, log the error but don't block the user.
+      userStatusDatabaseRef.set({
+        state: 'offline',
+        last_changed: firebase.database.ServerValue.TIMESTAMP,
+      }).catch(rtdbError => {
         console.error("Could not update user status on logout:", rtdbError);
-        // Continue with logout even if status update fails
-      }
+      });
     }
     try {
-      await signOut(auth);
+      await auth.signOut();
+      // Force UI update immediately after sign-out completes.
+      // This is more reliable than waiting for the onAuthStateChanged listener.
+      setCurrentUser(null);
       setView('login');
     } catch (err) {
       console.error("Error signing out: ", err);
+      // In a real app, we might show a toast notification to the user here.
     }
   };
 
   const handleUpdateUser = async (updatedUser: Partial<User> & { uid: string }) => {
-    const userDocRef = doc(db, 'users', updatedUser.uid);
+    const userDocRef = db.collection('users').doc(updatedUser.uid);
     try {
-        await updateDoc(userDocRef, updatedUser);
+        await userDocRef.update(updatedUser);
         // Optimistically update current user if it's them
         if (currentUser && currentUser.uid === updatedUser.uid) {
           setCurrentUser(prev => ({ ...prev!, ...updatedUser }));

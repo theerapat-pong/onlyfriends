@@ -1,8 +1,9 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getDatabase } from "firebase/database";
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
+import "firebase/compat/firestore";
+import "firebase/compat/database";
+
 
 // Your web app's Firebase configuration using environment variables
 // These variables should be set in your deployment environment (e.g., Vercel, Netlify)
@@ -18,9 +19,10 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = firebase.initializeApp(firebaseConfig);
 
 // Export Firebase services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const rtdb = getDatabase(app);
+export const auth = firebase.auth();
+export const db = firebase.firestore();
+export const rtdb = firebase.database();
+export { firebase }; // Export the firebase namespace for server timestamps etc.
