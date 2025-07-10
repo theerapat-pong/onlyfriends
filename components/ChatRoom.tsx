@@ -66,9 +66,10 @@ interface ChatRoomProps {
   currentUser: User;
   onLogout: () => void;
   onUpdateUser: (updatedUser: Partial<User> & { uid: string }) => void;
+  onNavigate: (path: string) => void;
 }
 
-const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomProps) => {
+const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser, onNavigate }: ChatRoomProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -376,6 +377,7 @@ const ChatRoom = ({ allUsers, currentUser, onLogout, onUpdateUser }: ChatRoomPro
         onLogout={onLogout} 
         isAuthorized={isVipAuthorizedInCurrentRoom}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onNavigate={onNavigate}
       />
       <div className="flex flex-1 overflow-hidden relative">
         <main className="relative flex-1 flex flex-col overflow-hidden bg-camfrog-panel-light">

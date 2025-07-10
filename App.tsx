@@ -3,6 +3,7 @@ import { User } from './types';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
 import ChatRoom from './components/ChatRoom';
+import AdminPanel from './components/AdminPanel';
 import { auth, db, rtdb, firebase } from './services/firebase';
 
 const App = () => {
@@ -11,6 +12,30 @@ const App = () => {
   const [view, setView] = useState<'login' | 'signup'>('login');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [route, setRoute] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setRoute(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Navigation function
+  const navigate = (path: string) => {
+    window.history.pushState({}, '', path);
+    setRoute(path);
+  };
+
+  // Security check for admin route
+  useEffect(() => {
+    if (route === '/admin' && loading === false && !currentUser?.isOwner) {
+      // Redirect non-owners away from admin page
+      navigate('/');
+    }
+  }, [route, currentUser, loading]);
+
 
   useEffect(() => {
     let unsubscribeFromRtdb: (() => void) | null = null;
@@ -49,13 +74,20 @@ const App = () => {
         const userDocRef = db.collection('users').doc(authUser.uid);
         const docSnap = await userDocRef.get();
         if (docSnap.exists) {
-          setCurrentUser({ uid: docSnap.id, ...docSnap.data() } as User);
+          const userData = { uid: docSnap.id, ...docSnap.data() } as User;
+          setCurrentUser(userData);
+          if (route === '/admin' && !userData.isOwner) {
+            navigate('/');
+          }
         } else {
           await auth.signOut();
           setCurrentUser(null);
         }
       } else {
         setCurrentUser(null);
+        if(route === '/admin') {
+            navigate('/');
+        }
       }
       setLoading(false);
     });
@@ -66,7 +98,7 @@ const App = () => {
             unsubscribeFromRtdb();
         }
     };
-  }, []);
+  }, [route]);
 
   useEffect(() => {
     const usersCollectionRef = db.collection('users');
@@ -154,6 +186,7 @@ const App = () => {
       // Force UI update immediately after sign-out completes.
       // This is more reliable than waiting for the onAuthStateChanged listener.
       setCurrentUser(null);
+      navigate('/');
       setView('login');
     } catch (err) {
       console.error("Error signing out: ", err);
@@ -178,8 +211,12 @@ const App = () => {
     return <div className="flex items-center justify-center h-screen bg-camfrog-bg text-white">กำลังโหลด...</div>;
   }
 
+  if (route === '/admin' && currentUser?.isOwner) {
+    return <AdminPanel onNavigate={navigate} onUpdateUser={handleUpdateUser} currentUser={currentUser} />;
+  }
+
   if (currentUser) {
-    return <ChatRoom allUsers={users} currentUser={currentUser} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />;
+    return <ChatRoom allUsers={users} currentUser={currentUser} onLogout={handleLogout} onUpdateUser={handleUpdateUser} onNavigate={navigate} />;
   }
 
   if (view === 'signup') {
